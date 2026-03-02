@@ -1,0 +1,33 @@
+name: Issue label comment
+
+on:
+  issues:
+    types: [opened, labeled]
+
+jobs:
+  comment-on-issue:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
+    steps:
+      - name: Comment based on issue label
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const issue = context.payload.issue;
+            if (!issue) {
+              core.info('No issue found in context, exiting.');
+              return;
+            }
+            const labels = issue.labels.map(l => l.name);
+            if (labels.includes('bug')) {
+              await github.rest.issues.createComment({ ...context.repo, issue_number: issue.number, body: 'Thank you. We will fix it.' });
+            } else if (labels.includes('feature')) {
+              await github.rest.issues.createComment({ ...context.repo, issue_number: issue.number, body: 'Thank you, we will consider to include this feature.' });
+            } else if (labels.includes('discussion')) {
+              await github.rest.issues.createComment({ ...context.repo, issue_number: issue.number, body: 'Thanks for starting this discussion! We welcome community input.' });
+            } else {
+              core.info('No matching label to comment on.');
+            }
